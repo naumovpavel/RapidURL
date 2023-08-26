@@ -3,7 +3,6 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -16,7 +15,6 @@ var secretKey, _ = os.LookupEnv("JWT_SECRET_KEY")
 
 func CreateJWT(id int) (string, error) {
 	const op = "auth.CreateJWT"
-	log.Println(secretKey)
 	secretKey := []byte(secretKey)
 
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -40,7 +38,7 @@ var (
 
 func DecodeJWT(jwtToken string) (int, error) {
 	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
@@ -48,8 +46,8 @@ func DecodeJWT(jwtToken string) (int, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userId := claims["userid"].(int)
-		expiration := claims["exp"].(int64)
+		userId := int(claims["userid"].(float64))
+		expiration := int64(claims["exp"].(float64))
 		if expiration > time.Now().Unix() {
 			return userId, nil
 		} else {

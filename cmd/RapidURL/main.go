@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"RapidURL/internal/api/http/links/add"
+	"RapidURL/internal/api/http/middleware/auth"
 	"RapidURL/internal/api/http/user/login"
 	"RapidURL/internal/api/http/user/register"
 	"RapidURL/internal/config"
@@ -23,6 +25,7 @@ func main() {
 
 	r.Post("/user/register", register.New(u, log))
 	r.Post("/user/login", login.New(u, log))
+	r.With(auth.New(log)).Get("/link", add.New(log))
 
 	log.Info("Starting server...")
 
