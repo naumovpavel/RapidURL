@@ -1,0 +1,9 @@
+env: "LOCAL"
+http_server:
+  address: "0.0.0.0:8081"
+  timeout: 5s
+  idle_timeout: 60s
+postgres:
+  host: 'localhost:5432'
+  user: 'postgres'
+  database: 'RapidURL'
