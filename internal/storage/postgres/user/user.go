@@ -1,4 +1,4 @@
-package postgres
+package user
 
 import (
 	"database/sql"
@@ -8,21 +8,16 @@ import (
 
 	"RapidURL/internal/config"
 	"RapidURL/internal/entity"
-	"RapidURL/internal/lib/logger/sl"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
-type UserStorage struct {
+type Storage struct {
 	db  *sql.DB
 	log *slog.Logger
 }
 
-var (
-	userExist = errors.New("user with this email already exist")
-)
-
-func NewUserStorage(cfg config.Postgres, log *slog.Logger) *UserStorage {
+func New(cfg config.Postgres, log *slog.Logger) *Storage {
 	url := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		cfg.User, cfg.Password, cfg.Host, cfg.Database,
 	)
@@ -37,7 +32,7 @@ func NewUserStorage(cfg config.Postgres, log *slog.Logger) *UserStorage {
 		log.Error("database doesn't response", err)
 	}
 
-	return &UserStorage{
+	return &Storage{
 		db:  db,
 		log: log,
 	}
@@ -45,7 +40,7 @@ func NewUserStorage(cfg config.Postgres, log *slog.Logger) *UserStorage {
 
 var ErrUserAlreadyExist = errors.New("user eith this email already exist")
 
-func (s *UserStorage) SaveUser(user entity.User) error {
+func (s *Storage) SaveUser(user entity.User) error {
 	const op = "storage.postgres.SaveUser"
 
 	stmt, err := s.db.Prepare("insert into users(name, password, email, salt) VALUES ($1,$2,$3,$4)")
@@ -68,7 +63,7 @@ func (s *UserStorage) SaveUser(user entity.User) error {
 
 var ErrUserNotFound = errors.New("user with this email not found")
 
-func (s *UserStorage) FindUserByEmail(email string) (*entity.User, error) {
+func (s *Storage) FindUserByEmail(email string) (*entity.User, error) {
 	const op = "storage.postgres.FindUserByEmail"
 
 	stmt, err := s.db.Prepare("select users.id, users.email, users.name, users.salt, users.password from users where users.email = $1")
@@ -82,7 +77,6 @@ func (s *UserStorage) FindUserByEmail(email string) (*entity.User, error) {
 
 	if err != nil {
 		var pgErr *pq.Error
-		s.log.Error("fuck", sl.Err(err))
 		if errors.As(err, &pgErr) && pgErr.Code == "02000" {
 			return nil, ErrUserNotFound
 		}

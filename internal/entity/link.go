@@ -4,9 +4,9 @@ import (
 	"net/url"
 )
 
-type link struct {
-	id     int
-	alias  string
-	url    url.URL
-	userId int
+type Link struct {
+	Id     int
+	Alias  string
+	Url    url.URL
+	UserId int
 }

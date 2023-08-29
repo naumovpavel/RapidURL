@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"os"
 
-	"RapidURL/internal/api/http/links/add"
+	"RapidURL/internal/api/http/link/add"
 	"RapidURL/internal/api/http/middleware/auth"
 	"RapidURL/internal/api/http/user/login"
 	"RapidURL/internal/api/http/user/register"
 	"RapidURL/internal/config"
-	"RapidURL/internal/storage/postgres"
+	link2 "RapidURL/internal/storage/postgres/link"
+	"RapidURL/internal/storage/postgres/user"
+	"RapidURL/internal/usecase/link"
 	user2 "RapidURL/internal/usecase/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,12 +22,15 @@ func main() {
 	cfg := config.MustLoad()
 	log := initLogger(cfg)
 	r := initRouter()
-	s := postgres.NewUserStorage(cfg.Postgres, log)
+	s := user.New(cfg.Postgres, log)
 	u := user2.New(s)
+
+	ls := link2.New(cfg.Postgres, log)
+	lu := link.New(ls)
 
 	r.Post("/user/register", register.New(u, log))
 	r.Post("/user/login", login.New(u, log))
-	r.With(auth.New(log)).Get("/link", add.New(log))
+	r.With(auth.New(log)).Post("/link", add.New(log, lu))
 
 	log.Info("Starting server...")
 

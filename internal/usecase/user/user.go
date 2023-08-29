@@ -3,7 +3,6 @@ package user
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/auth"
@@ -18,7 +17,6 @@ type Storage interface {
 
 type Usecase struct {
 	userStorage Storage
-	log         *slog.Logger
 }
 
 func New(storage Storage) *Usecase {
@@ -34,7 +32,6 @@ func (u *Usecase) CreateUser(userDTO CreateUserDTO) error {
 	pass, err := bcrypt.GenerateFromPassword([]byte(salt+userDTO.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		u.log.Error("err", fmt.Errorf("%s: %w", op, err))
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -52,7 +49,6 @@ var (
 )
 
 func (u *Usecase) LoginUser(userDTO LoginUserDTO) (string, error) {
-	const op = "usecase.user.LoginUser"
 	user, err := u.userStorage.FindUserByEmail(userDTO.Email)
 	if err != nil {
 		return "", ErrUserNotFound

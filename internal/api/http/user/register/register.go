@@ -8,7 +8,7 @@ import (
 	"RapidURL/internal/api/http/request"
 	"RapidURL/internal/api/http/response"
 	"RapidURL/internal/lib/logger/sl"
-	"RapidURL/internal/storage/postgres"
+	user2 "RapidURL/internal/storage/postgres/user"
 	"RapidURL/internal/usecase/user"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -51,7 +51,7 @@ func New(reg registerer, log *slog.Logger) http.HandlerFunc {
 
 		if err != nil {
 			log.Error("failed to create user", sl.Err(err))
-			if errors.Is(err, postgres.ErrUserAlreadyExist) {
+			if errors.Is(err, user2.ErrUserAlreadyExist) {
 				render.JSON(w, r, response.Error(err))
 			} else {
 				render.JSON(w, r, response.Error(errors.New("internal error")))
