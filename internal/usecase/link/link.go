@@ -1,6 +1,8 @@
 package link
 
 import (
+	"net/url"
+
 	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/random"
 )
@@ -23,15 +25,23 @@ func New(s Storage) *Usecase {
 const AliasLength = 5
 
 func (u *Usecase) SaveLink(link SaveLinkDTO) (string, error) {
-	const op = "usecase.user.SaveLink"
-
 	if link.Alias == "" {
 		link.Alias = random.NewRandomString(AliasLength)
 	}
 
 	return link.Alias, u.s.SaveLink(&entity.Link{
 		Alias:  link.Alias,
-		Url:    link.Url,
+		Url:    &link.Url,
 		UserId: link.UserId,
 	})
+}
+
+func (u Usecase) GetLink(dto GetLinkDTO) (url.URL, error) {
+	link, err := u.s.FindLinkByAlias(dto.Alias)
+
+	if err != nil {
+		return url.URL{}, err
+	}
+
+	return *link.Url, err
 }

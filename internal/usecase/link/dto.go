@@ -9,3 +9,7 @@ type SaveLinkDTO struct {
 	Url    url.URL `json:"url"`
 	UserId int     `json:"userId"`
 }
+
+type GetLinkDTO struct {
+	Alias string `json:"alias"`
+}

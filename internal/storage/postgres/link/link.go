@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	`net/url`
 
 	"RapidURL/internal/config"
 	"RapidURL/internal/entity"
@@ -64,7 +65,7 @@ func (s *Storage) SaveLink(link *entity.Link) error {
 var ErrLinkNotFound = errors.New("link with this alias not found")
 
 func (s *Storage) FindLinkByAlias(alias string) (*entity.Link, error) {
-	const op = "storage.postgres.FindUserByEmail"
+	const op = "storage.postgres.FindLinkByAlias"
 
 	stmt, err := s.db.Prepare("select alias, url, user_id from links where alias = $1")
 	if err != nil {
@@ -72,15 +73,21 @@ func (s *Storage) FindLinkByAlias(alias string) (*entity.Link, error) {
 	}
 
 	var link entity.Link
+	var linkUrl string
 	row := stmt.QueryRow(alias)
-	err = row.Scan(&link.Alias, &link.Url, &link.UserId)
+
+	err = row.Scan(&link.Alias, &linkUrl, &link.UserId)
 
 	if err != nil {
-		var pgErr *pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == "02000" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrLinkNotFound
 		}
 
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	link.Url, err = url.Parse(linkUrl)
+	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 

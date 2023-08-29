@@ -76,8 +76,7 @@ func (s *Storage) FindUserByEmail(email string) (*entity.User, error) {
 	err = row.Scan(&user.Id, &user.Email, &user.Name, &user.Salt, &user.Password)
 
 	if err != nil {
-		var pgErr *pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == "02000" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
 
