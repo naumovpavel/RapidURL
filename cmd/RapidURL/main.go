@@ -63,7 +63,7 @@ func initRouter(cfg *config.Config, log *slog.Logger) *chi.Mux {
 
 	r.Post("/user/register", register.New(userUsecase, log))
 	r.Post("/user/login", login.New(userUsecase, log))
-	r.With(auth.New(log)).Post("/link", add.New(log, linkUsecase))
+	r.With(auth.New(log)).Post("/link/add", add.New(log, linkUsecase))
 	r.Get("/{alias}", redirect.New(log, linkUsecase))
 
 	return r
