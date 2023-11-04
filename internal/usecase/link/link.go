@@ -36,7 +36,7 @@ func (u *Usecase) SaveLink(link SaveLinkDTO) (string, error) {
 	})
 }
 
-func (u Usecase) GetLink(dto GetLinkDTO) (url.URL, error) {
+func (u *Usecase) GetLink(dto GetLinkDTO) (url.URL, error) {
 	link, err := u.s.FindLinkByAlias(dto.Alias)
 
 	if err != nil {

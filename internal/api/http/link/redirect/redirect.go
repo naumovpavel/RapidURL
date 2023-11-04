@@ -12,7 +12,6 @@ import (
 	"RapidURL/internal/usecase/link"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 )
 
 type Getter interface {
@@ -35,15 +34,15 @@ func New(log *slog.Logger, gt Getter) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, redirectUrl.String(), http.StatusFound)
+		http.Redirect(w, r, redirectUrl.String(), http.StatusTemporaryRedirect)
 	}
 }
 
 func handleLinkFindError(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
 	log.Error("failed to find link", sl.Err(err))
 	if errors.Is(err, storage.ErrLinkNotFound) {
-		render.JSON(w, r, response.Error(err))
+		response.Error(w, r, err, 404)
 	} else {
-		render.JSON(w, r, response.Error(errors.New("internal error")))
+		response.InternalError(w, r)
 	}
 }

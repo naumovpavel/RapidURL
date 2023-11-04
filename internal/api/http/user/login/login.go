@@ -36,7 +36,8 @@ func New(login loginer, log *slog.Logger) http.HandlerFunc {
 
 		req, err := request.PrepareRequest[Request](r)
 		if err != nil {
-			handleInvalidRequest(w, r, log, err)
+			log.Error("invalid request", sl.Err(err))
+			response.Error(w, r, err, 400)
 			return
 		}
 
@@ -61,21 +62,13 @@ func New(login loginer, log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func handleInvalidRequest(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
-	log.Error("invalid request", sl.Err(err))
-	render.JSON(w, r, response.Error(err))
-}
-
 func handleLoginFailure(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
 	log.Error("failed to login user", sl.Err(err))
 	if errors.Is(err, user.ErrUserNotFound) {
-		render.Status(r, 404)
-		render.JSON(w, r, response.Error(err))
-	} else if errors.Is(err, user.ErrUserNotFound) {
-		render.Status(r, 401)
-		render.JSON(w, r, response.Error(err))
+		response.Error(w, r, err, 404)
+	} else if errors.Is(err, user.ErrIncorrectPass) {
+		response.Error(w, r, err, 401)
 	} else {
-		render.Status(r, 500)
-		render.JSON(w, r, response.Error(errors.New("internal error")))
+		response.InternalError(w, r)
 	}
 }

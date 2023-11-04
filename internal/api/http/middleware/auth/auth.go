@@ -9,8 +9,9 @@ import (
 	"RapidURL/internal/api/http/response"
 	"RapidURL/internal/lib/auth"
 	"RapidURL/internal/lib/logger/sl"
-	"github.com/go-chi/render"
 )
+
+var unauthorizedError = errors.New("unauthorized")
 
 func New(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -38,5 +39,5 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 
 func unAuth(log *slog.Logger, err error, w http.ResponseWriter, r *http.Request) {
 	log.Error("user unauthorized", sl.Err(err))
-	render.JSON(w, r, response.Error(errors.New("unauthorized")))
+	response.Error(w, r, unauthorizedError, 401)
 }

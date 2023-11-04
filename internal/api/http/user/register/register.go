@@ -21,7 +21,7 @@ type Request struct {
 }
 
 type Response struct {
-	response.Response
+	message string
 }
 
 type registerer interface {
@@ -39,7 +39,7 @@ func New(reg registerer, log *slog.Logger) http.HandlerFunc {
 		req, err := request.PrepareRequest[Request](r)
 		if err != nil {
 			log.Error("invalid request", sl.Err(err))
-			render.JSON(w, r, response.Error(err))
+			response.Error(w, r, err, 400)
 			return
 		}
 
@@ -50,15 +50,19 @@ func New(reg registerer, log *slog.Logger) http.HandlerFunc {
 		})
 
 		if err != nil {
-			log.Error("failed to create user", sl.Err(err))
-			if errors.Is(err, user2.ErrUserAlreadyExist) {
-				render.JSON(w, r, response.Error(err))
-			} else {
-				render.JSON(w, r, response.Error(errors.New("internal error")))
-			}
+			handleCreateUserFailure(w, r, log, err)
 			return
 		}
 
-		render.JSON(w, r, response.Ok())
+		render.JSON(w, r, &Response{message: "successfully registered"})
+	}
+}
+
+func handleCreateUserFailure(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
+	log.Error("failed to create user", sl.Err(err))
+	if errors.Is(err, user2.ErrUserAlreadyExist) {
+		response.Error(w, r, err, 409)
+	} else {
+		response.InternalError(w, r)
 	}
 }
