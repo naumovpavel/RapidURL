@@ -19,7 +19,6 @@ type Request struct {
 }
 
 type Response struct {
-	response.Response
 	Jwt string `json:"jwt,omitempty"`
 }
 
@@ -29,7 +28,7 @@ type loginer interface {
 
 func New(login loginer, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "api.http.user.login.New"
+		const op = "api.http.user.login"
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
@@ -37,8 +36,7 @@ func New(login loginer, log *slog.Logger) http.HandlerFunc {
 
 		req, err := request.PrepareRequest[Request](r)
 		if err != nil {
-			log.Error("invalid request", sl.Err(err))
-			render.JSON(w, r, response.Error(err))
+			handleInvalidRequest(w, r, log, err)
 			return
 		}
 
@@ -48,22 +46,36 @@ func New(login loginer, log *slog.Logger) http.HandlerFunc {
 		})
 
 		if err != nil {
-			log.Error("failed to login user", sl.Err(err))
-			if errors.Is(err, user.ErrUserNotFound) {
-				render.JSON(w, r, response.Error(err))
-			} else {
-				render.JSON(w, r, response.Error(errors.New("internal error")))
-			}
+			handleLoginFailure(w, r, log, err)
 			return
 		}
 
 		http.SetCookie(w, &http.Cookie{
 			Name:  "jwt",
 			Value: jwt,
+			Path:  "/",
 		})
 		render.JSON(w, r, Response{
-			Response: response.Ok(),
-			Jwt:      jwt,
+			Jwt: jwt,
 		})
+	}
+}
+
+func handleInvalidRequest(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
+	log.Error("invalid request", sl.Err(err))
+	render.JSON(w, r, response.Error(err))
+}
+
+func handleLoginFailure(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
+	log.Error("failed to login user", sl.Err(err))
+	if errors.Is(err, user.ErrUserNotFound) {
+		render.Status(r, 404)
+		render.JSON(w, r, response.Error(err))
+	} else if errors.Is(err, user.ErrUserNotFound) {
+		render.Status(r, 401)
+		render.JSON(w, r, response.Error(err))
+	} else {
+		render.Status(r, 500)
+		render.JSON(w, r, response.Error(errors.New("internal error")))
 	}
 }
