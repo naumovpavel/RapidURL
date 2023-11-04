@@ -30,11 +30,12 @@ type Saver interface {
 }
 
 func New(log *slog.Logger, sv Saver) http.HandlerFunc {
-	const op = "api.http.link.add.New"
-	log = log.With(slog.String("op", op))
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		log = log.With(slog.String("request_id", middleware.GetReqID(r.Context())))
+		const op = "api.http.link.add"
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
 
 		req, err := request.PrepareRequest[Request](r)
 		if err != nil {
