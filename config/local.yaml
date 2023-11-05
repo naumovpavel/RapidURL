@@ -4,6 +4,6 @@ http_server:
   timeout: 5s
   idle_timeout: 60s
 postgres:
-  host: 'localhost:5432'
-  user: 'postgres'
+  host: 'postgres:5432'
+  user: 'admin'
   database: 'RapidURL'

@@ -26,6 +26,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	prometheus_middleware "github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
 )
 
 func main() {
@@ -33,10 +37,12 @@ func main() {
 	log := initLogger(cfg)
 	pool := initPool(cfg.Postgres, log)
 	defer pool.Close()
-	memcache := memcache.New("localhost:11211")
+	memcache := memcache.New("memcached:11211")
 	defer memcache.Close()
-	r := initRouter(cfg, log, pool, memcache)
-
+	mdlw := prometheus_middleware.New(prometheus_middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{}),
+	})
+	r := initRouter(cfg, log, pool, memcache, mdlw)
 	log.Info("Starting server...")
 
 	srv := &http.Server{
@@ -50,6 +56,7 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+	go http.ListenAndServe(":9102", promhttp.Handler())
 	go srv.ListenAndServe()
 	<-sig
 
@@ -58,8 +65,9 @@ func main() {
 	srv.Shutdown(ctx)
 }
 
-func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, memcache *memcache.Client) *chi.Mux {
+func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, memcache *memcache.Client, mdlw prometheus_middleware.Middleware) *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(std.HandlerProvider("", mdlw))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
