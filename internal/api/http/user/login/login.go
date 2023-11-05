@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -23,7 +24,7 @@ type Response struct {
 }
 
 type loginer interface {
-	LoginUser(userDTO user.LoginUserDTO) (string, error)
+	LoginUser(ctx context.Context, email string, pass string) (string, error)
 }
 
 func New(login loginer, log *slog.Logger) http.HandlerFunc {
@@ -41,10 +42,7 @@ func New(login loginer, log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		jwt, err := login.LoginUser(user.LoginUserDTO{
-			Email:    req.Email,
-			Password: req.Password,
-		})
+		jwt, err := login.LoginUser(r.Context(), req.Email, req.Password)
 
 		if err != nil {
 			handleLoginFailure(w, r, log, err)

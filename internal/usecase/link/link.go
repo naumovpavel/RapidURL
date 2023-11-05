@@ -1,22 +1,19 @@
 package link
 
 import (
+	"context"
 	"net/url"
 
 	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/random"
+	repository "RapidURL/internal/repository/link"
 )
 
-type Storage interface {
-	SaveLink(link *entity.Link) error
-	FindLinkByAlias(alias string) (*entity.Link, error)
-}
-
 type Usecase struct {
-	s Storage
+	s repository.Repository
 }
 
-func New(s Storage) *Usecase {
+func New(s repository.Repository) *Usecase {
 	return &Usecase{
 		s: s,
 	}
@@ -24,24 +21,24 @@ func New(s Storage) *Usecase {
 
 const AliasLength = 5
 
-func (u *Usecase) SaveLink(link SaveLinkDTO) (string, error) {
+func (u *Usecase) SaveLink(ctx context.Context, link entity.Link) (string, error) {
 	if link.Alias == "" {
 		link.Alias = random.NewRandomString(AliasLength)
 	}
 
-	return link.Alias, u.s.SaveLink(&entity.Link{
+	return link.Alias, u.s.SaveLink(ctx, repository.DTO{
 		Alias:  link.Alias,
-		Url:    &link.Url,
-		UserId: link.UserId,
+		Url:    link.Url.String(),
+		UserId: link.User.Id,
 	})
 }
 
-func (u *Usecase) GetLink(dto GetLinkDTO) (url.URL, error) {
-	link, err := u.s.FindLinkByAlias(dto.Alias)
+func (u *Usecase) GetLink(ctx context.Context, alias string) (url.URL, error) {
+	link, err := u.s.FindLinkByAlias(ctx, alias)
 
 	if err != nil {
 		return url.URL{}, err
 	}
 
-	return *link.Url, err
+	return link.Url, err
 }

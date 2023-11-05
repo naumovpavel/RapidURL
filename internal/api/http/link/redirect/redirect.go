@@ -1,6 +1,7 @@
 package redirect
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -8,14 +9,13 @@ import (
 
 	"RapidURL/internal/api/http/response"
 	"RapidURL/internal/lib/logger/sl"
-	storage "RapidURL/internal/storage/postgres/link"
-	"RapidURL/internal/usecase/link"
+	storage "RapidURL/internal/repository/link"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Getter interface {
-	GetLink(dto link.GetLinkDTO) (url.URL, error)
+	GetLink(ctx context.Context, alias string) (url.URL, error)
 }
 
 func New(log *slog.Logger, gt Getter) http.HandlerFunc {
@@ -27,7 +27,7 @@ func New(log *slog.Logger, gt Getter) http.HandlerFunc {
 		)
 
 		alias := chi.URLParam(r, "alias")
-		redirectUrl, err := gt.GetLink(link.GetLinkDTO{Alias: alias})
+		redirectUrl, err := gt.GetLink(r.Context(), alias)
 
 		if err != nil {
 			handleLinkFindError(w, r, log, err)

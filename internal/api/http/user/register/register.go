@@ -1,15 +1,16 @@
 package register
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 
 	"RapidURL/internal/api/http/request"
 	"RapidURL/internal/api/http/response"
+	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/logger/sl"
-	user2 "RapidURL/internal/storage/postgres/user"
-	"RapidURL/internal/usecase/user"
+	repository "RapidURL/internal/repository/user"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -25,7 +26,7 @@ type Response struct {
 }
 
 type registerer interface {
-	CreateUser(userDTO user.CreateUserDTO) error
+	CreateUser(ctx context.Context, user entity.User) error
 }
 
 func New(reg registerer, log *slog.Logger) http.HandlerFunc {
@@ -43,7 +44,7 @@ func New(reg registerer, log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		err = reg.CreateUser(user.CreateUserDTO{
+		err = reg.CreateUser(r.Context(), entity.User{
 			Name:     req.Name,
 			Email:    req.Email,
 			Password: req.Password,
@@ -60,7 +61,7 @@ func New(reg registerer, log *slog.Logger) http.HandlerFunc {
 
 func handleCreateUserFailure(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
 	log.Error("failed to create user", sl.Err(err))
-	if errors.Is(err, user2.ErrUserAlreadyExist) {
+	if errors.Is(err, repository.ErrUserAlreadyExist) {
 		response.Error(w, r, err, 409)
 	} else {
 		response.InternalError(w, r)

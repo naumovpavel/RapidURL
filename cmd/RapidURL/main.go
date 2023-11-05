@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,18 +16,20 @@ import (
 	"RapidURL/internal/api/http/user/login"
 	"RapidURL/internal/api/http/user/register"
 	"RapidURL/internal/config"
-	linkStorage "RapidURL/internal/storage/postgres/link"
-	userStorage "RapidURL/internal/storage/postgres/user"
+	linkRepository "RapidURL/internal/repository/link/postgres"
+	userRepository "RapidURL/internal/repository/user/postgres"
 	"RapidURL/internal/usecase/link"
 	"RapidURL/internal/usecase/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	cfg := config.MustLoad()
 	log := initLogger(cfg)
-	r := initRouter(cfg, log)
+	pool := initPool(cfg.Postgres, log)
+	r := initRouter(cfg, log, pool)
 
 	log.Info("Starting server...")
 
@@ -49,16 +52,16 @@ func main() {
 	srv.Shutdown(ctx)
 }
 
-func initRouter(cfg *config.Config, log *slog.Logger) *chi.Mux {
+func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
-	userStorage := userStorage.New(cfg.Postgres, log)
+	userStorage := userRepository.New(pool, log)
 	userUsecase := user.New(userStorage)
 
-	linkStorage := linkStorage.New(cfg.Postgres, log)
+	linkStorage := linkRepository.New(pool, log)
 	linkUsecase := link.New(linkStorage)
 
 	r.Post("/user/register", register.New(userUsecase, log))
@@ -80,4 +83,25 @@ func initLogger(cfg *config.Config) *slog.Logger {
 	}
 
 	return log
+}
+
+func initPool(cfg config.Postgres, log *slog.Logger) *pgxpool.Pool {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	connUrl := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
+		cfg.User, cfg.Password, cfg.Host, cfg.Database,
+	)
+
+	pool, err := pgxpool.New(ctx, connUrl)
+	if err != nil {
+		log.Error("can't open database connection", err)
+		panic(err)
+	}
+
+	if err = pool.Ping(ctx); err != nil {
+		log.Error("database doesn't response", err)
+		panic(err)
+	}
+
+	return pool
 }

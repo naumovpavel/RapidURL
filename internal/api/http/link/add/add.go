@@ -1,6 +1,7 @@
 package add
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -8,9 +9,9 @@ import (
 
 	"RapidURL/internal/api/http/request"
 	"RapidURL/internal/api/http/response"
+	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/logger/sl"
-	link2 "RapidURL/internal/storage/postgres/link"
-	"RapidURL/internal/usecase/link"
+	storage "RapidURL/internal/repository/link"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -25,7 +26,7 @@ type Response struct {
 }
 
 type Saver interface {
-	SaveLink(link link.SaveLinkDTO) (string, error)
+	SaveLink(ctx context.Context, link entity.Link) (string, error)
 }
 
 func New(log *slog.Logger, sv Saver) http.HandlerFunc {
@@ -50,10 +51,12 @@ func New(log *slog.Logger, sv Saver) http.HandlerFunc {
 			return
 		}
 
-		alias, err := sv.SaveLink(link.SaveLinkDTO{
-			Alias:  req.Alias,
-			Url:    *reqUrl,
-			UserId: r.Context().Value("userId").(int),
+		alias, err := sv.SaveLink(r.Context(), entity.Link{
+			Alias: req.Alias,
+			Url:   *reqUrl,
+			User: entity.User{
+				Id: r.Context().Value("userId").(int),
+			},
 		})
 
 		if err != nil {
@@ -69,7 +72,7 @@ func New(log *slog.Logger, sv Saver) http.HandlerFunc {
 
 func handleSaveLinkError(log *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	log.Error("failed to save link", sl.Err(err))
-	if errors.Is(err, link2.ErrAliasAlreadyExist) {
+	if errors.Is(err, storage.ErrAliasAlreadyExist) {
 		response.Error(w, r, err, 403)
 	} else {
 		response.InternalError(w, r)

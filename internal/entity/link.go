@@ -5,8 +5,8 @@ import (
 )
 
 type Link struct {
-	Id     int
-	Alias  string
-	Url    *url.URL
-	UserId int
+	Id    int
+	Alias string
+	Url   url.URL
+	User  User
 }
