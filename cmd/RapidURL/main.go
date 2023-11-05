@@ -16,10 +16,13 @@ import (
 	"RapidURL/internal/api/http/user/login"
 	"RapidURL/internal/api/http/user/register"
 	"RapidURL/internal/config"
-	linkRepository "RapidURL/internal/repository/link/postgres"
+	linkRepository "RapidURL/internal/repository/link"
+	memcachedLinkRepository "RapidURL/internal/repository/link/memcached"
+	postgresLinkRepository "RapidURL/internal/repository/link/postgres"
 	userRepository "RapidURL/internal/repository/user/postgres"
 	"RapidURL/internal/usecase/link"
 	"RapidURL/internal/usecase/user"
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,7 +32,10 @@ func main() {
 	cfg := config.MustLoad()
 	log := initLogger(cfg)
 	pool := initPool(cfg.Postgres, log)
-	r := initRouter(cfg, log, pool)
+	defer pool.Close()
+	memcache := memcache.New("localhost:11211")
+	defer memcache.Close()
+	r := initRouter(cfg, log, pool, memcache)
 
 	log.Info("Starting server...")
 
@@ -52,7 +58,7 @@ func main() {
 	srv.Shutdown(ctx)
 }
 
-func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) *chi.Mux {
+func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, memcache *memcache.Client) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -61,8 +67,10 @@ func initRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) *chi.M
 	userStorage := userRepository.New(pool, log)
 	userUsecase := user.New(userStorage)
 
-	linkStorage := linkRepository.New(pool, log)
-	linkUsecase := link.New(linkStorage)
+	linkStorage := postgresLinkRepository.New(pool, log)
+	linkCache := memcachedLinkRepository.New(memcache)
+	cachedLink := linkRepository.NewCachedRepository(linkStorage, linkCache, log)
+	linkUsecase := link.New(cachedLink)
 
 	r.Post("/user/register", register.New(userUsecase, log))
 	r.Post("/user/login", login.New(userUsecase, log))

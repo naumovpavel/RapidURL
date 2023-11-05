@@ -16,3 +16,8 @@ type Repository interface {
 	SaveLink(ctx context.Context, link DTO) error
 	FindLinkByAlias(ctx context.Context, alias string) (entity.Link, error)
 }
+
+type CacheRepository interface {
+	SaveLink(ctx context.Context, link DTO) error
+	FindLinkByAlias(ctx context.Context, alias string) (entity.Link, error)
+}
