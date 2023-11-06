@@ -9,23 +9,26 @@ import (
 	"RapidURL/internal/entity"
 	"RapidURL/internal/lib/logger/sl"
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var _ Repository = &CachedRepository{}
 
 type CachedRepository struct {
-	repository Repository
-	cache      CacheRepository
-	log        *slog.Logger
+	repository       Repository
+	cache            CacheRepository
+	log              *slog.Logger
+	totalCacheMisses prometheus.Counter
 }
 
 // NewCachedRepository receive a link repository and cache repository
 // and return a composition of it
-func NewCachedRepository(repository Repository, cache CacheRepository, log *slog.Logger) *CachedRepository {
+func NewCachedRepository(repository Repository, cache CacheRepository, log *slog.Logger, totalCacheMisses prometheus.Counter) *CachedRepository {
 	return &CachedRepository{
-		repository: repository,
-		cache:      cache,
-		log:        log,
+		repository:       repository,
+		cache:            cache,
+		log:              log,
+		totalCacheMisses: totalCacheMisses,
 	}
 }
 
@@ -52,6 +55,7 @@ func (c *CachedRepository) FindLinkByAlias(ctx context.Context, alias string) (e
 	if err != nil {
 		if errors.Is(err, memcache.ErrCacheMiss) {
 			c.log.Warn("link cache miss", sl.Err(err))
+			c.totalCacheMisses.Add(1)
 		} else {
 			c.log.Error("error while trying find link in cache", sl.Err(err))
 		}
