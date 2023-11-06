@@ -13,6 +13,7 @@ type Config struct {
 	Env        string     `yaml:"env" env-default:"LOCAL"`
 	HTTPServer HTTPServer `yaml:"http_server"`
 	Postgres   Postgres   `yaml:"postgres"`
+	Memcached  Memcached  `yaml:"memcached"`
 }
 
 type HTTPServer struct {
@@ -26,6 +27,10 @@ type Postgres struct {
 	Database string `yaml:"database"`
 	User     string `yaml:"user"`
 	Password string `env:"POSTGRES_PASSWORD"`
+}
+
+type Memcached struct {
+	Hosts []string `yaml:"hosts"`
 }
 
 type Flags struct {

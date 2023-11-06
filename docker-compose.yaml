@@ -40,6 +40,7 @@ services:
 
   Memcached:
     image: sameersbn/memcached:1.5.6-2
+    container_name: memcached
     ports:
       - "11211:11211"
     restart: always

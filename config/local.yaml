@@ -4,6 +4,9 @@ http_server:
   timeout: 5s
   idle_timeout: 60s
 postgres:
-  host: 'postgres:5432'
+  host: 'localhost:5435'
   user: 'admin'
   database: 'RapidURL'
+memcached:
+  hosts:
+    - "localhost:11211"
