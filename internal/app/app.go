@@ -93,12 +93,7 @@ func (a *App) startServer(r *chi.Mux, reg prometheus.Gatherer) {
 	}
 	a.srv = srv
 
-	go func() {
-		err := http.ListenAndServe(":9102", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-		if err != nil {
-			a.log.Error("prom", err)
-		}
-	}()
+	go http.ListenAndServe(":9102", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	go srv.ListenAndServe()
 }
 
