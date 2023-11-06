@@ -9,8 +9,8 @@ import (
 
 	"RapidURL/internal/entity"
 	repository "RapidURL/internal/repository/link"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lib/pq"
 )
 
 var _ repository.Repository = &Repository{}
@@ -37,7 +37,7 @@ func (s *Repository) SaveLink(ctx context.Context, link repository.DTO) error {
 	)
 
 	if err != nil {
-		var pgErr *pq.Error
+		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return repository.ErrAliasAlreadyExist
 		}

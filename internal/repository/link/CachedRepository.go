@@ -56,7 +56,9 @@ func (c *CachedRepository) FindLinkByAlias(ctx context.Context, alias string) (e
 			c.log.Error("error while trying find link in cache", sl.Err(err))
 		}
 
-		return c.repository.FindLinkByAlias(ctx, alias)
+		link, err = c.repository.FindLinkByAlias(ctx, alias)
+		c.cache.SaveLink(ctx, FromEntity(link))
+		return link, err
 	}
 
 	return link, nil

@@ -9,8 +9,8 @@ import (
 
 	"RapidURL/internal/entity"
 	repository "RapidURL/internal/repository/user"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -39,7 +39,7 @@ func (s *Repository) SaveUser(ctx context.Context, user repository.DTO) error {
 	)
 
 	if err != nil {
-		var pgErr *pq.Error
+		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return repository.ErrUserAlreadyExist
 		}
