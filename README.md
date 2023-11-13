@@ -1,6 +1,19 @@
 # RapidURL
 
-RapidURL is a link shortener service implemented in the Go programming language. The service provides an API with authentication capabilities using JWT tokens. Users can utilize RapidURL to create concise, easy-to-remember links and share them with others.
+RapidURL is a robust REST API URL shortener crafted in Go. This versatile tool not only shortens URLs but also incorporates advanced features to enhance performance, security, and monitoring.
+
+## Features:
+
+- **Clean Architecture:** RapidURL is built on a clean and modular architecture, promoting maintainability, scalability, and testability.
+
+- **JWT Authentication:** Secure your shortened URLs with JWT authentication, ensuring that only authorized users can create and manage links.
+
+- **Caching with Memcached:** Employ a caching mechanism using Memcached to optimize the search of link, reducing latency and enhancing overall system performance.
+
+- **Metrics collection with Prometheus:** RapidURL integrates Prometheus for collecting detailed metrics, providing insights into system behavior, performance, and usage patterns.
+
+- **Visualization with Grafana:** Visualize the collected metrics using Grafana, allowing to gain meaningful insights through interactive dashboards.
+
 
 ## API Usage Examples
 
@@ -26,7 +39,7 @@ RapidURL is a link shortener service implemented in the Go programming language.
 200 OK
 ```json
 {
-  "status": "Ok"
+  "message": "successfully registered"
 }
 ```
 
@@ -51,7 +64,6 @@ RapidURL is a link shortener service implemented in the Go programming language.
 200 OK
 ```json
 {
-  "status": "Ok",
   "jwt": "eyJhbGciRgtyUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTU5NDY1MjksInVzZXJpZCI6MX0.QCrA2bJ8ekMJyuKZFwPeWbqu8DxekKrPMvjIOc51gCU"
 }
 ```
@@ -77,7 +89,19 @@ RapidURL is a link shortener service implemented in the Go programming language.
 200 OK
 ```json
 {
-  "status": "Ok",
   "alias": "gh"
 }
 ```
+
+### 4. Redirect
+
+**Description:** This endpoint allows users to be redirected using an alias
+
+**Endpoint:** `/gh`
+
+**Method:** `GET`
+
+**Response:**
+307 Temporary redirect
+
+Location: github.com
